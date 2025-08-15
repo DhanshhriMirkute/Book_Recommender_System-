@@ -13,7 +13,7 @@ st.set_page_config(page_title="Book Recommender", page_icon="📚", layout="wide
 st.title("📚 Book Recommender System")
 
 # -------------------- Tabs -------------------- #
-tab1, tab2 = st.tabs(["Popular Books", "Recommend Books"])
+tab1, tab2 = st.tabs(["Top 50 Popular Books", "Recommend Books"])
 
 # -------------------- Popular Books Tab -------------------- #
 with tab1:

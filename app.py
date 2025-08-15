@@ -15,7 +15,7 @@ st.title("📚 Book Recommender System")
 # Popular Books Section
 st.subheader("Top Popular Books")
 cols = st.columns(5)
-for i in range(min(5, len(popular_df))):
+for i in range(min(50, len(popular_df))):
     with cols[i % 5]:
         st.image(popular_df['Image-URL-M'].values[i], use_container_width=True)
         st.markdown(f"**{popular_df['Book-Title'].values[i]}**")

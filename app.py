@@ -1,46 +1,53 @@
-from flask import Flask, render_template,request
+import streamlit as st
 import pickle
 import numpy as np
 
-popular_df = pickle.load(open("popular.pkl","rb"))
-pt = pickle.load(open("pt.pkl","rb"))
-books = pickle.load(open("books.pkl","rb"))
-similarity_score = pickle.load(open("similarity_score.pkl","rb"))
+# Load data
+popular_df = pickle.load(open("popular.pkl", "rb"))
+pt = pickle.load(open("pt.pkl", "rb"))
+books = pickle.load(open("books.pkl", "rb"))
+similarity_score = pickle.load(open("similarity_score.pkl", "rb"))
 
-app = Flask(__name__)
+# Streamlit App
+st.set_page_config(page_title="Book Recommender", page_icon="📚", layout="wide")
+st.title("📚 Book Recommender System")
 
-@app.route('/')
-def index():
-    return render_template('index.html',
-                           book_name = list(popular_df['Book-Title'].values),
-                           author=list(popular_df['Book-Author'].values),
-                           image=list(popular_df['Image-URL-M'].values),
-                           votes=list(popular_df['num_ratings'].values),
-                           rating=list(popular_df['avg_ratings'].values))
+# Popular Books Section
+st.subheader("Top Popular Books")
+cols = st.columns(5)
+for i in range(min(5, len(popular_df))):
+    with cols[i % 5]:
+        st.image(popular_df['Image-URL-M'].values[i], use_container_width=True)
+        st.markdown(f"**{popular_df['Book-Title'].values[i]}**")
+        st.caption(f"by {popular_df['Book-Author'].values[i]}")
+        st.write(f"⭐ {popular_df['avg_ratings'].values[i]} | 🗳 {popular_df['num_ratings'].values[i]} votes")
 
-@app.route('/recommend')
-def recommend_ui():
-    return render_template('recommend.html')
+st.markdown("---")
 
-@app.route('/recommend_books',methods=['post'])
-def recommend():
-    user_input = request.form.get('user_input')
-    index = np.where(pt.index == user_input)[0][0]
-    similar_items = sorted(list(enumerate(similarity_score[index])), key=lambda x: x[1], reverse=True)[1:6]
+# Recommendation Section
+st.subheader("Get Book Recommendations")
+user_input = st.text_input("Enter a Book Title")
 
-    data = []
-    for i in similar_items:
-        item = []
-        temp_df = books[books['Book-Title'] == pt.index[i[0]]]
-        item.extend(list(temp_df.drop_duplicates('Book-Title')["Book-Title"].values))
-        item.extend(list(temp_df.drop_duplicates('Book-Title')["Book-Author"].values))
-        item.extend(list(temp_df.drop_duplicates('Book-Title')["Image-URL-M"].values))
+if st.button("Recommend"):
+    if user_input in pt.index:
+        index = np.where(pt.index == user_input)[0][0]
+        similar_items = sorted(
+            list(enumerate(similarity_score[index])),
+            key=lambda x: x[1],
+            reverse=True
+        )[1:6]
 
-        data.append(item)
+        st.write("### Recommended Books:")
+        rec_cols = st.columns(5)
+        for idx, (book_idx, score) in enumerate(similar_items):
+            temp_df = books[books['Book-Title'] == pt.index[book_idx]].drop_duplicates('Book-Title')
+            title = temp_df["Book-Title"].values[0]
+            author = temp_df["Book-Author"].values[0]
+            image_url = temp_df["Image-URL-M"].values[0]
 
-    print(data)
-
-    return render_template('recommend.html',data=data)
-
-if __name__ == '__main__':
-    app.run(debug=True)
+            with rec_cols[idx % 5]:
+                st.image(image_url, use_container_width=True)
+                st.markdown(f"**{title}**")
+                st.caption(f"by {author}")
+    else:
+        st.error("❌ Book not found in dataset. Please check the title and try again.")
